@@ -1,5 +1,6 @@
 from sklearn import datasets
 from sklearn.preprocessing  import normalize, scale
+import numpy as np
 from numpy.random import shuffle
 
 
@@ -8,54 +9,66 @@ class Dataset():
 	def __init__(self):
 		self.X = None
 		self.Y = None
-		self.is_scale = False
 
+		self.phase = {'train': None, 'test': None}
 		self.batch = None
 
-	def __getitem__(self, idx):
-		return self.X[idx]
-
-	def _get_sample(self, idx):
-		return self.X[idx], self.Y[idx]
-
-	def _get_n_samples(self, init, last):
-		return self.X[init:last], self.Y[init:last]
-
-	def _get_num_instances(self):
+	def __len__(self):
 		return len(self.X)
 
-	def _get_num_variables(self):
-		return self.X.size[1]
+	def __getitem__(self, idx):
+		return self.X[idx], self.Y[idx]
 
 	def _normalize(self):
 		return scale(self.X)
 
-	def set_batches(self):
+	def _to_one_hot(self):
+		size = len(self.X)
+		n_values = np.max(self.Y) + 1
+		one_hot = np.zeros((size, n_values))
+		for i in range(size):
+			one_hot[i, self.Y[i]] = 1
+		return one_hot
+
+	def split_train_test(self, test_size):
+		test_size = len(self.X) * test_size // 100
+		train_size = len(self.X) - test_size
+		idx_list = [i for i in range(len(self.X))]
+		shuffle(idx_list)
+
+		X = self._normalize()[idx_list]
+		label = self._to_one_hot()[idx_list]
+
+		size = len(self.X)
+		self.phase['train'] = [(X[i], label[i]) for i in range(train_size)]
+		self.phase['test'] = [(X[train_size + i], label[train_size + i]) 
+			for i in range(test_size)]
+
+	def set_batches(self, data, batch_size):
 		raise NotImplementedError
 
-	def next_batch(self):
+	def next_batch(self, step):
 		raise NotImplementedError
+
 
 
 class Iris(Dataset):
-	"""Iris dataset."""
+	"""Iris flowers dataset."""
 	def __init__(self):
-		iris = datasets.load_iris()
-		self.X = iris.data
-		self.X = self._normalize()
-		self.Y = iris.target
+		self.X = datasets.load_iris().data
+		self.Y = datasets.load_iris().target
 
-	def set_batches(self, batch_size):
-		idx_list = [i for i in range(self._get_num_instances())]
-		shuffle(idx_list)
-		self.X = self.X[idx_list]
-		self.Y = self.Y[idx_list]
+		self.phase = {'train': None, 'test': None}
 
-		n_batches = self._get_num_instances() // batch_size
-		self.batch = [self._get_n_samples(i * batch_size, i * batch_size + batch_size) 
+	def set_batches(self, data, batch_size):
+		n_batches = len(data) // batch_size
+		shuffle(data)
+		self.batch = [data[i * batch_size: i * batch_size + batch_size]
 			for i in range(n_batches)]
-
+		
 	def next_batch(self, step):
 		return self.batch[step]
+
+
 
 	
