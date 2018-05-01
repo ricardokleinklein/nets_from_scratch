@@ -11,6 +11,7 @@ np.random.seed(1)
 
 class Layer(object):
 	"""Base class for different layers."""
+
 	def get_params(self):
 		"""Return an iterator over the parameters if any."""
 		return []
@@ -22,9 +23,10 @@ class Layer(object):
 		"""
 		return []
 
-	def _forward(self, x):
+	def _forward(self, x, is_train=False):
 		"""Forward step. Computes the output of the layer.
 		x: input to the layer.
+		is_train: whether it is training phase or test.
 		"""
 		raise NotImplementedError
 
@@ -39,8 +41,8 @@ class Layer(object):
 class Linear(Layer):
 	"""Linear transformation."""
 	def __init__(self, input_size, output_size):
-		self.W = random_mat((input_size, output_size))
-		self.b = random_mat(output_size)
+		self.W = random_mat(input_size, output_size)
+		self.b = random_mat(1, output_size)
 
 	def get_params(self):
 		return chain(np.nditer(self.W, op_flags=['readwrite']),
@@ -51,7 +53,7 @@ class Linear(Layer):
 		Jb = np.sum(grad, axis=0)
 		return [g for g in chain(np.nditer(Jw), np.nditer(Jb))]
 
-	def _forward(self, x):
+	def _forward(self, x, is_train):
 		return x.dot(self.W) + self.b
 
 	def _backwards(self, pred, grad):
@@ -60,7 +62,7 @@ class Linear(Layer):
 
 class Sigmoid(Layer):
 
-	def _forward(self, x):
+	def _forward(self, x, is_train):
 		return sigmoid(x)
 
 	def _backwards(self, pred, grad):
@@ -69,7 +71,7 @@ class Sigmoid(Layer):
 
 class Softmax(Layer):
 
-	def _forward(self, x):
+	def _forward(self, x, is_train):
 		return softmax(x)
 
 	def _backwards(self, pred, target):
@@ -81,8 +83,25 @@ class Softmax(Layer):
 
 class Relu(Layer):
 
-	def _forward(self, x):
+	def _forward(self, x, is_train):
 		return relu(x)
 
 	def _backwards(self, pred, grad):
 		return np.multiply(relu(pred, is_deriv=True), grad)
+
+
+class Dropout(Layer):
+
+	def __init__(self, dropout_rate):
+		self.dist = None
+		self.p = dropout_rate
+
+	def _forward(self, x, is_train):
+		if not is_train:
+			return x
+		self.dist = dropout(x, self.p)
+		return self.dist * x
+
+	def _backwards(self, pred, grad):
+		return self.dist * grad
+

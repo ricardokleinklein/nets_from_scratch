@@ -15,8 +15,12 @@ def softmax(x):
 	return np.exp(x) / np.sum(np.exp(x), axis=1, keepdims=True)
 
 
-def random_mat(size):
-	return (2 * np.random.random(size=size) - 1) * 0.1
+def dropout(x, p):
+	return np.random.binomial(1, p, size=x.shape)
+
+
+def random_mat(in_size, out_size):
+	return np.random.randn(in_size, out_size) * np.sqrt(2.0/in_size)
 
 
 def cross_entropy_loss(pred, target):

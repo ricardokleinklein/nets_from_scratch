@@ -18,6 +18,19 @@ import matplotlib.pyplot as plt
 def get_hparams(hparams):
 	return namedtuple('hparams',hparams.keys())(*hparams.values())
 
+def print_network(model):
+	print(model.name + " = { ")
+	for layer in model.layers:
+		name = str(layer).split(" ")[0].split(".")[-2:]
+		print("\t" + "/".join(name))
+	print("}\n")
+
+def print_hparams(hparams):
+	print("hparams = { ")
+	for key, value in vars(hparams).items():
+		print("\t" + str(key) + " = " + str(value))
+	print("}\n")
+
 
 if __name__ == "__main__":
 	hparams = get_hparams(hparams)
@@ -29,5 +42,12 @@ if __name__ == "__main__":
 	iris.split_train_test(hparams.test_size)
 
 	model = MLP(hparams)
-	model.train(iris)
-	model.evaluate(iris)
+	print("Initializing the net")
+	print_network(model)
+	print_hparams(hparams)
+
+	print("Training stage")
+	model.train(digits)
+
+	print("Test stage")
+	model.evaluate(digits)

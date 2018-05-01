@@ -11,9 +11,10 @@ from tqdm import tqdm
 
 class NeuralNet(object):
 
-	def _forward(self, x):
+	def _forward(self, x, is_train):
 		"""Forward pass to get the outputs of the model.
-		x: input to the model
+		x: input to the model.
+		is_train: whether it is training phase or test.
 		"""
 		raise NotImplementedError
 
@@ -35,7 +36,7 @@ class NeuralNet(object):
 			n_batches = len(data.batch)
 			for step in range(n_batches):
 				x, target = data.next_batch(step)
-				act = self._forward(x)
+				act = self._forward(x, is_train=True)
 				batch_cost = self.layers[-1].get_cost(act[-1], target)
 				param_grads = self._backwards(target)
 				self._update_params()
@@ -139,6 +140,7 @@ class MLP(NeuralNet):
 		self.batch_size = hparams.batch_size
 		self.lr = hparams.lr
 		self.non_linear = hparams.non_linear
+		self.dropout = hparams.dropout
 
 		self.layers = self.__init__model(hparams.input_size, 
 			hparams.hidden_size, hparams.output_size)
@@ -154,16 +156,17 @@ class MLP(NeuralNet):
 		layers.append(Linear(input_size, hidden_size[0]))
 		for i in range(n_layers):
 			layers.append(Relu()) if self.non_linear == 1 else layers.append(Sigmoid())
+			layers.append(Dropout(self.dropout))
 			if i != (n_layers - 1):
 				layers.append(Linear(hidden_size[i], hidden_size[i + 1]))
 		layers.append(Linear(hidden_size[-1], output_size))
 		layers.append(Softmax())
 		return layers
 
-	def _forward(self, x):
+	def _forward(self, x, is_train=False):
 		self.h = [x]
 		for layer in self.layers:
-			h = layer._forward(x)
+			h = layer._forward(x, is_train)
 			self.h.append(h)
 			x = self.h[-1]
 		return self.h
