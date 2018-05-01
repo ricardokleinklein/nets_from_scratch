@@ -11,7 +11,7 @@ class Dataset:
 		self.Y = None
 		self.is_scaled = False
 
-		self.phase = {'train': None, 'test': None}
+		self.phase = {'train': None, 'test': None, 'validation': None}
 		self.batch = None
 
 	def __len__(self):
@@ -44,7 +44,10 @@ class Dataset:
 		train_idx = np.random.choice(idx_list, train_size, replace=False)
 		self.phase['train'] = np.asarray([[X[idx], target[idx]] for idx in train_idx])
 		test_idx = [i for i in idx_list if i not in train_idx]
-		self.phase['test'] = np.asarray([[X[idx], target[idx]] for idx in test_idx])
+		validation_idx = np.random.choice(test_idx, size=len(test_idx) // 2, replace=False)
+		self.phase['validation'] = np.asarray([[X[idx], target[idx]] for idx in validation_idx])
+		self.phase['test'] = np.asarray([[X[idx], target[idx]] for idx in test_idx 
+			if idx not in validation_idx])
 
 	def set_batches(self, data, batch_size):
 		raise NotImplementedError
@@ -61,7 +64,7 @@ class smallMNIST(Dataset):
 		self.Y = datasets.load_digits().target
 		self.is_scaled = True
 
-		self.phase = {'train': None, 'test': None}
+		self.phase = {'train': None, 'test': None, 'validation': None}
 
 	def set_batches(self, data, batch_size):
 		n_batches = len(data) // batch_size
@@ -85,7 +88,7 @@ class Iris(Dataset):
 		self.Y = datasets.load_iris().target
 		self.is_scaled = True
 
-		self.phase = {'train': None, 'test': None}
+		self.phase = {'train': None, 'test': None, 'validation': None}
 
 	def set_batches(self, data, batch_size):
 		n_batches = len(data) // batch_size
