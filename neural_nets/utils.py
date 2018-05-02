@@ -1,7 +1,7 @@
 # coding: utf-8
 
 import numpy as np
-
+import matplotlib.pyplot as plt
 
 
 def sigmoid(x, is_deriv=False):
@@ -26,3 +26,14 @@ def random_mat(in_size, out_size):
 def cross_entropy_loss(pred, target):
 	return - np.multiply(target, np.log(pred)).sum() / pred.shape[0]
 
+def display_train(epochs, train_cost, validation_acc):
+	plt.subplot(2,1,1)
+	plt.plot(range(epochs), train_cost)
+	plt.xlabel('Epoch')
+	plt.ylabel('Training cost')
+
+	plt.subplot(2,1,2)
+	plt.plot(range(epochs), validation_acc)
+	plt.xlabel('Epoch')
+	plt.ylabel('Validation accuracy')
+	plt.show()

@@ -28,32 +28,46 @@ class NeuralNet(object):
 		"""SGD updating of the model's parameters."""
 		raise NotImplementedError
 
-	def train(self, data):
+	def train(self, data, display=False):
 		"""Training stage for the network.
 		data: complete task dataset."""
+		train_cost = []
+		validation_acc = []
 		for epoch in tqdm(range(self.epochs)):
 			data.set_batches(data.phase['train'], self.batch_size)
 			n_batches = len(data.batch)
+			minibatch_cost = 0
 			for step in range(n_batches):
 				x, target = data.next_batch(step)
 				act = self._forward(x, is_train=True)
-				batch_cost = self.layers[-1].get_cost(act[-1], target)
+				minibatch_cost += self.layers[-1].get_cost(act[-1], target)
 				param_grads = self._backwards(target)
 				self._update_params()
+			train_cost.append(minibatch_cost / n_batches)
+			validation_acc.append(self.evaluate(data, is_train=True))
+		if display:
+			display_train(self.epochs, train_cost, validation_acc)
 
-	def evaluate(self, data, get_confusion_matrix=True):
+	def evaluate(self, data, is_train=False, get_confusion_matrix=True):
 		"""Test stage for the network.
 		data: complete task dataset."""
-		data.set_batches(data.phase['test'], len(data.phase['test']))
+		if not is_train:
+			data.set_batches(data.phase['test'], len(data.phase['test']))
+		else:
+			data.set_batches(data.phase['validation'], len(data.phase['validation']))
+
 		n_batches = len(data.batch)
 		x, target = data.next_batch(0)
 		self._forward(x)
 		pred = np.argmax(self.h[-1], axis=1)
 		y_true = np.argmax(target, axis=1)
 		test_accuracy = metrics.accuracy_score(y_true, pred)
-		print('The accuracy on the test set is {:.3f}'.format(test_accuracy))
-		if get_confusion_matrix:
-			self.get_confusion_matrix(y_true, pred)
+		
+		if not is_train:
+			print('The accuracy on the test set is {:.3f}'.format(test_accuracy))
+			if get_confusion_matrix:
+				self.get_confusion_matrix(y_true, pred)
+		return test_accuracy
 
 	def get_confusion_matrix(self, y_true, pred):
 		import matplotlib.pyplot as plt
