@@ -1,7 +1,7 @@
 hparams = {
 	# Network architecture
-	'input_size': 4,
-	'output_size': 3,
+	'input_size': 64,
+	'output_size': 10,
 	'hidden_size': [120, 33],
 	'non_linear': 0, # 0 - Sigmoid, 1 - Relu (recommended)
 	# Training hyperparameters

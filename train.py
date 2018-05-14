@@ -68,13 +68,15 @@ if __name__ == "__main__":
 
 	data = get_data(task, hparams.test_size)
 
-	model = MLP(hparams)
+	model = ConvNet(hparams)
 	print("Initializing the neural network")
 	print_hparams(hparams)
 	print_network(model)
 	
-	print("Training stage")
-	model.train(data, display=True)
 
-	print("Test stage")
-	model.evaluate(data)
+	A = np.random.randn(2,4,4,3)
+	print("Training stage")
+	print(model.train(A, display=False).shape)
+
+	# print("Test stage")
+	# model.evaluate(data, get_confusion_matrix=False)

@@ -2,4 +2,5 @@
 from __future__ import with_statement, print_function, absolute_import
 
 from .feed_forward import Perceptron, MLP
+from .convolutional import ConvNet
 from .modules import *
