@@ -36,7 +36,10 @@ class Dataset:
 		shuffle(idx_list)
 
 		if self.is_scaled:
-			X = self._normalize()[idx_list]
+			try:
+				X = self._normalize()[idx_list]
+			except:
+				X = self.X[idx_list]
 		else:
 			X = self.X[idx_list]
 		target = self._to_one_hot()[idx_list]
@@ -58,9 +61,10 @@ class Dataset:
 
 class smallMNIST(Dataset):
 	"""smallMNIST dataset."""
-	def __init__(self):
+	def __init__(self, flatten=False):
 		self.X = datasets.load_digits().images
-		self.X = np.asarray([x.flatten() for x in self.X])
+		if flatten:
+			self.X = np.asarray([x.flatten() for x in self.X])
 		self.Y = datasets.load_digits().target
 		self.is_scaled = True
 

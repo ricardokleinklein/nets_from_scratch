@@ -52,7 +52,7 @@ def print_hparams(hparams):
 
 def get_data(task_id, test_size):
 	if task_id == "digits":
-		data = smallMNIST()
+		data = smallMNIST(flatten=False)
 	elif task_id == "iris":
 		data = Iris()
 	else:
@@ -74,9 +74,8 @@ if __name__ == "__main__":
 	print_network(model)
 	
 
-	A = np.random.randn(2,4,4,3)
 	print("Training stage")
-	print(model.train(A, display=False).shape)
+	model.train(data, display=False)
 
 	# print("Test stage")
 	# model.evaluate(data, get_confusion_matrix=False)

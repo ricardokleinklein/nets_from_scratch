@@ -59,7 +59,7 @@ class NeuralNet(object):
 		n_batches = len(data.batch)
 		x, target = data.next_batch(0)
 		self._forward(x)
-		pred = np.argmax(self.h[-1], axis=1)
+		pred = np.argmax(np.squeeze(self.h[-1]), axis=1)
 		y_true = np.argmax(target, axis=1)
 		test_accuracy = metrics.accuracy_score(y_true, pred)
 		

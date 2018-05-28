@@ -21,7 +21,6 @@ def dropout(x, p):
 
 def random_mat(size):
 	n_dims = len(size)
-	print(size)
 	if n_dims == 2:
 		return np.random.randn(size[0], size[1]) * np.sqrt(2.0/size[0])
 	elif n_dims == 3:
@@ -59,3 +58,13 @@ def zero_pad2d(x, pad):
 	"""
 	x_pad = np.pad(x, ((0,0), (pad, pad), (pad, pad), (0,0)), 'constant')
 	return x_pad
+
+
+def create_mask(x):
+	return (x == np.max(x))
+
+
+def distribute_value(grad, shape):
+	H, W = shape
+	avg = grad / (H + W)
+	return avg * np.ones((H, W))

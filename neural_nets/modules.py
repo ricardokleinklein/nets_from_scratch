@@ -63,18 +63,41 @@ class Linear(Layer):
 class Conv2d(Layer):
 	"""2D Convolutional layer."""
 	def __init__(self, input_channels, output_channels, kernel,
-		stride=2, padding=2):
+		stride=1, padding=1):
 		self.W = random_mat((kernel, kernel, input_channels, output_channels))
 		self.b = random_mat((1, 1, 1, output_channels))
 		self.stride = stride
-		self.pad = padding
+		self.pad = int(padding)
+		self.f = kernel
 
 	def get_params(self):
 		return chain(np.nditer(self.W, op_flags=['readwrite']),
 			np.nditer(self.b, op_flags=['readwrite']))
 
 	def get_params_grad(self, x, grad):
-		pass
+		(f, f, C_prev, C) = self.W.shape
+		(m, H, W, C) = grad.shape
+		dW = np.zeros(grad.shape)
+		db = np.zeros((1, 1, 1, C))
+		A_prev_grad = zero_pad2d(x, self.pad)
+		dA_prev_grad = zero_pad2d(grad, self.pad)
+
+		for i in range(m):
+			a_prev_pad = A_prev_grad[i]
+			da_prev_pad = dA_prev_grad[i]
+			for h in range(H):
+				for w in range(W):
+					for c in range(C):
+						vert_start = h * self.stride
+						vert_end = h * self.stride + self.f
+						horiz_start = w * self.stride
+						horiz_end = w * self.stride + self.f
+
+						a_slice = a_prev_pad[vert_start:vert_end, horiz_start:horiz_end, :]
+						dW[:, :, :, c] += a_slice * grad[i, h, w, c]
+						db[:, :, :, c] += grad[i, h, w, c]
+		return [g for g in chain(np.nditer(dW), np.nditer(db))]
+
 
 	def _forward_partial(self, x, c):
 		return np.sum(np.multiply(x, self.W[:, :, :, c]) + float(self.b[:, :, :, c]))
@@ -107,7 +130,25 @@ class Conv2d(Layer):
 		return Z
 
 	def _backwards(self, pred, grad):
-		pass
+		(m, H_prev, W_prev, C_prev) = pred.shape
+		(m, H, W, C) = grad.shape
+		dA_prev = np.zeros((m, H_prev, W_prev, C_prev))
+		dA_prev_pad = zero_pad2d(dA_prev, self.pad)
+		for i in range(m):
+			da_prev_pad = dA_prev_pad[i]
+			for h in range(H):
+				for w in range(W):
+					for c in range(C):
+
+						vert_start = h * self.stride
+						vert_end = h * self.stride + self.f
+						horiz_start = w * self.stride
+						horiz_end = w * self.stride + self.f
+						print(self.W[:, :, :, c].shape, grad[i, h, w, c].shape)
+						da_prev_pad[vert_start:vert_end, horiz_start:horiz_end, :] += self.W[:, :, :, c] * grad[i, h, w, c]
+			dA_prev[i, :, :, :] = da_prev_pad[self.pad:-self.pad, self.pad:-self.pad, :]
+		assert(dA_prev.shape == (m, H_prev, W_prev, C_prev))
+		return dA_prev
 
 
 class Sigmoid(Layer):
@@ -173,7 +214,30 @@ class Pooling(Layer):
 		return A
 
 	def _backwards(self, pred, grad):
-		pass
+		m, H_prev, W_prev, C_prev = pred.shape
+		m, H, W, C = grad.shape
+		grad_prev = np.zeros(pred.shape)
+
+		for i in range(m):
+			pred_prev = pred[i]
+			for h in range(H):
+				for w in range(W):
+					for c in range(C):
+						vert_start = h * self.s
+						vert_end = h * self.s + self.f
+						horiz_start = w * self.s
+						horiz.end = w * self.s + self.f
+
+						if self.mode == 'max':
+							pred_prev_slice = pred_prev[vert_start:vert_end, horiz_start:horiz_end, c]
+							mask = create_mask(pred_prev_slice)
+							grad_prev[i, vert_start:vert_end, horiz_start:horiz_end, c] += mask * grad[i, h, w, c]
+						elif self.mode == 'average':
+							dg = grad[i, h, w, c]
+							shape = (self.f, self.f)
+							grad_prev[i, vert_start: vert_end, horiz_start: horiz_end, c] += distribute_value(dg, shape)
+		assert grad_prev.shape == pred.shape
+		return grad_prev
 
 
 class Dropout(Layer):
